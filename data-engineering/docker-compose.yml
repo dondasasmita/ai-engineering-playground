@@ -1,0 +1,15 @@
+version: '3.8'
+
+services:
+  spark:
+    image: jupyter/all-spark-notebook:spark-3.5.0
+    ports:
+      - "8888:8888"
+    volumes:
+      - .:/home/jovyan/work
+      - data-engineering:/home/jovyan
+    environment:
+      - JUPYTER_ENABLE_LAB=yes
+
+volumes:
+  data-engineering:
