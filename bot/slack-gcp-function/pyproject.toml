@@ -1,0 +1,21 @@
+[tool.poetry]
+name = "slack-gcp-function"
+version = "0.1.0"
+description = ""
+authors = ["Donda Yusuf <dondasasmita@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+flask = "^3.0.3"
+python-dotenv = "^1.0.1"
+slack-bolt = "^1.20.1"
+slack-sdk = "^3.31.0"
+ollama = "^0.3.2"
+fireworks-ai = "^0.15.0"
+functions-framework = "^3.8.1"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
