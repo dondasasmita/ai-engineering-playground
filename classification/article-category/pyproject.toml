@@ -1,0 +1,15 @@
+[tool.poetry]
+name = "article-category"
+version = "0.1.0"
+description = ""
+authors = ["Donda Yusuf <dondasasmita@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+cohere = "^5.9.1"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
