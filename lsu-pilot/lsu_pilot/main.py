@@ -14,6 +14,7 @@ from telegram.ext import (
 from .prompt import CODE_PROMPT
 from .functions import functions, run_function
 import json
+import requests
 
 import pandas as pd
 import numpy as np
@@ -72,6 +73,17 @@ async def chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
                         "role": "tool",
                         "name": name,
                         "content": str(response) + "Image was sent to the user, do not send the base64 string to them. Only send back 'here is the svg rendered as requested'",
+                    }
+                )
+            elif name == "generate_image":
+                  image_response = requests.get(response)
+                  await context.bot.send_photo(chat_id=update.effective_chat.id, photo=image_response.content)
+                  messages.append(
+                    {
+                        "tool_call_id": tool_call.id,
+                        "role": "tool",
+                        "name": name,
+                        "content": "Image was generated for the user using DALL-E 3",
                     }
                 )
             else:
