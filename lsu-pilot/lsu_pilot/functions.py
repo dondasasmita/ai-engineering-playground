@@ -1,6 +1,12 @@
 from cairosvg import svg2png
 import requests
 import os
+from openai import OpenAI
+from dotenv import load_dotenv
+
+load_dotenv()
+
+openai = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 functions = [
     {
@@ -64,6 +70,23 @@ functions = [
             },
         },
     },
+    {
+        "type": "function",
+        "function": {
+            "name": "generate_image",
+            "description": "Generate an image using DALL-E based on a text prompt and it will return the url of the image",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "prompt": {
+                        "type": "string",
+                        "description": "Text prompt to generate the image as required by the user"
+                    }
+                },
+                "required": ["prompt"]
+            }
+        }
+    }
 ]
 
 
@@ -107,12 +130,27 @@ def python_math_execution(math_string):
   except:
     return 'invalid code generated'
 
+def generate_image(prompt):
+    try:
+        print(f"Attempting to generate image with prompt: {prompt}")
+        response = openai.images.generate(prompt=prompt,
+                                        model="dall-e-3",
+                                        n=1,
+                                        size="1024x1024")
+        image_url = response.data[0].url
+        print(f"Successfully generated image. URL: {image_url}")
+        return image_url
+    except Exception as e:
+        print(f"Error generating image: {str(e)}")
+        return f"Failed to generate image: {str(e)}"
+
 def run_function(name_of_function: str, args: dict):
      
     list_of_functions = {
         "svg_to_png_bytes": svg_to_png_bytes,
         "python_math_execution": python_math_execution,
         "get_weather": get_weather,
+        "generate_image": generate_image,
         # future functions go here
     }
     
