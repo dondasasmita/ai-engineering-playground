@@ -1,0 +1,87 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: lsu_pilot/Dockerfile
+    container_name: chat_app
+    volumes:
+      - .:/app
+    ports:
+      - "8080:8080"
+    depends_on:
+      - redis
+    environment:
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+
+  redis:
+    image: redis:latest
+    container_name: redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+      
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
+    healthcheck:
+      test: ["CMD", "rabbitmqctl", "status"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  celery_worker:
+    build:
+      context: .
+      dockerfile: lsu_pilot/Dockerfile
+    container_name: celery_worker
+    volumes:
+      - .:/app
+    command: celery -A lsu_pilot worker --loglevel=info
+    depends_on:
+      - rabbitmq
+      - redis
+    environment:
+      REDIS_HOST: ${REDIS_HOST}
+      REDIS_PORT: ${REDIS_PORT}
+      RABBITMQ_HOST: ${RABBITMQ_HOST}
+      RABBITMQ_USER: ${RABBITMQ_USER}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
+
+  flower:
+    build:
+      context: .
+      dockerfile: lsu_pilot/Dockerfile
+    container_name: flower
+    volumes:
+      - .:/app
+    command: celery -A lsu_pilot flower --port=5555
+    ports:
+      - "5555:5555"
+    depends_on:
+      - celery_worker
+      - redis
+      - rabbitmq
+    environment:
+      REDIS_HOST: ${REDIS_HOST}
+      REDIS_PORT: ${REDIS_PORT}
+      RABBITMQ_HOST: ${RABBITMQ_HOST}
+      RABBITMQ_USER: ${RABBITMQ_USER}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
+
+volumes:
+  redis_data:
+
+networks:
+  default:
+    driver: bridge
+  
