@@ -130,6 +130,31 @@ async def internal_knowledge(update: Update, context: ContextTypes.DEFAULT_TYPE)
       answer = answer_question(df, question=update.message.text, debug=True)
       await context.bot.send_message(chat_id=update.effective_chat.id, text=answer)
 
+async def demo_celery(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    from lsu_pilot.celery import app
+    
+    task = app.send_task('demo_task', args=[update.message.text])
+
+    await context.bot.send_message(
+        chat_id=update.effective_chat.id,
+        text=f"Task sent to queue with ID: {task.id}"
+    )
+
+    result = await check_task_status(task, context, update.effective_chat.id)
+    if result:
+        await context.bot.send_message(
+            chat_id=update.effective_chat.id,
+            text=f"Task completed: {result}"
+        )   
+
+async def check_task_status(task, context, chat_id):
+    from asyncio import sleep
+    
+    while not task.ready():
+        await sleep(1)  
+    
+    return task.get()  
+
 
 if __name__ == "__main__":
 
@@ -138,10 +163,11 @@ if __name__ == "__main__":
     start_handler = CommandHandler("start", start)
     chat_handler = MessageHandler(filters.TEXT & (~filters.COMMAND), chat)
     wiki_handler = CommandHandler('wiki', internal_knowledge)
-
+    celery_handler = CommandHandler('celery', demo_celery)
     application.add_handler(start_handler)
     application.add_handler(chat_handler)
     
     application.add_handler(wiki_handler)
+    application.add_handler(celery_handler)
 
     application.run_polling()
