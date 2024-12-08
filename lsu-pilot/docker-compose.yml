@@ -12,9 +12,8 @@ services:
       - "8080:8080"
     depends_on:
       - redis
-    environment:
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
+    env_file:
+      - ./.env
 
   redis:
     image: redis:latest
@@ -23,7 +22,7 @@ services:
       - "6379:6379"
     volumes:
       - redis_data:/data
-      
+
   rabbitmq:
     image: rabbitmq:3-management
     container_name: rabbitmq
@@ -50,12 +49,8 @@ services:
     depends_on:
       - rabbitmq
       - redis
-    environment:
-      REDIS_HOST: ${REDIS_HOST}
-      REDIS_PORT: ${REDIS_PORT}
-      RABBITMQ_HOST: ${RABBITMQ_HOST}
-      RABBITMQ_USER: ${RABBITMQ_USER}
-      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
+    env_file:
+      - ./.env
 
   flower:
     build:
@@ -69,19 +64,10 @@ services:
       - "5555:5555"
     depends_on:
       - celery_worker
-      - redis
       - rabbitmq
-    environment:
-      REDIS_HOST: ${REDIS_HOST}
-      REDIS_PORT: ${REDIS_PORT}
-      RABBITMQ_HOST: ${RABBITMQ_HOST}
-      RABBITMQ_USER: ${RABBITMQ_USER}
-      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
+      - redis
+    env_file:
+      - ./.env
 
 volumes:
   redis_data:
-
-networks:
-  default:
-    driver: bridge
-  
