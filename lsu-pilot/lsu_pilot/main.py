@@ -28,7 +28,11 @@ csv_path = os.path.join(current_dir + "/../", "processed", "embeddings.csv")
 df = pd.read_csv(csv_path, index_col=0)
 df["embeddings"] = df["embeddings"].apply(eval).apply(np.array)
 
-load_dotenv()
+ENV_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+
+dotenv_path = os.path.join(ENV_DIR, '.env')
+
+load_dotenv(dotenv_path)
 
 openai = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 tg_bot_token = os.getenv("TG_BOT_TOKEN")
@@ -130,6 +134,29 @@ async def internal_knowledge(update: Update, context: ContextTypes.DEFAULT_TYPE)
       answer = answer_question(df, question=update.message.text, debug=True)
       await context.bot.send_message(chat_id=update.effective_chat.id, text=answer)
 
+async def demo_celery(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    from lsu_pilot.celery import app
+    
+    chat_id = update.effective_chat.id
+    message_text = update.message.text
+
+    # Send the task to Celery with the chat_id
+    app.send_task('demo_task', args=[chat_id, message_text])
+
+    # Inform the user that the task has started
+    await context.bot.send_message(
+        chat_id=chat_id,
+        text="Your task has been started and you will be notified upon completion."
+    )   
+
+async def check_task_status(task, context, chat_id):
+    from asyncio import sleep
+    
+    while not task.ready():
+        await sleep(1)  
+    
+    return task.get()  
+
 
 if __name__ == "__main__":
 
@@ -138,10 +165,11 @@ if __name__ == "__main__":
     start_handler = CommandHandler("start", start)
     chat_handler = MessageHandler(filters.TEXT & (~filters.COMMAND), chat)
     wiki_handler = CommandHandler('wiki', internal_knowledge)
-
+    celery_handler = CommandHandler('celery', demo_celery)
     application.add_handler(start_handler)
     application.add_handler(chat_handler)
     
     application.add_handler(wiki_handler)
+    application.add_handler(celery_handler)
 
     application.run_polling()
