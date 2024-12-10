@@ -34,12 +34,19 @@ dotenv_path = os.path.join(ENV_DIR, '.env')
 
 load_dotenv(dotenv_path)
 
-openai = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+BASE_MODEL = 'gpt-4o-mini'
+
+if os.getenv("ENV") == "development":
+    openai = OpenAI(base_url=os.getenv("LOCAL_LLM_BASE_URL"), api_key=os.getenv("LOCAL_API_KEY"))
+    BASE_MODEL = os.getenv("LOCAL_MODEL")
+else:
+    openai = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
 tg_bot_token = os.getenv("TG_BOT_TOKEN")
 
 messages = [
     {"role": "system", "content": "You are a helpful assistant that answers questions."},
-    {"role": "system", "content": CODE_PROMPT}
+    # {"role": "system", "content": CODE_PROMPT}
 ]
 
 logging.basicConfig(
@@ -51,7 +58,7 @@ async def chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
     messages.append({"role": "user", "content": update.message.text})
 
     initial_response = openai.chat.completions.create(
-        model="gpt-4o-mini", messages=messages, tools=functions
+        model=BASE_MODEL, messages=messages, tools=functions
     )
 
     initial_response_message = initial_response.choices[0].message
@@ -101,7 +108,7 @@ async def chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 )
             # Generate the final response
             final_response = openai.chat.completions.create(
-                model="gpt-4o-mini",
+                model=BASE_MODEL,
                 messages=messages,
             )
             final_answer = final_response.choices[0].message
