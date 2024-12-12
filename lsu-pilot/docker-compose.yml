@@ -10,10 +10,17 @@ services:
       - .:/app
     ports:
       - "8080:8080"
+      - "5678:5678"
     depends_on:
       - redis
     env_file:
       - ./.env
+    command: >
+      sh -c 'if [ \"$DEBUG\" = \"1\" ]; then \
+        poetry run python -m debugpy --listen 0.0.0.0:5678 --wait-for-client -m lsu_pilot.main; \
+      else \
+        poetry run python -m lsu_pilot.main; \
+      fi'
 
   redis:
     image: redis:latest
@@ -41,11 +48,10 @@ services:
   celery_worker:
     build:
       context: .
-      dockerfile: lsu_pilot/Dockerfile
+      dockerfile: workers/Dockerfile
     container_name: celery_worker
     volumes:
       - .:/app
-    command: celery -A lsu_pilot worker --loglevel=info
     depends_on:
       - rabbitmq
       - redis
@@ -55,11 +61,11 @@ services:
   flower:
     build:
       context: .
-      dockerfile: lsu_pilot/Dockerfile
+      dockerfile: workers/Dockerfile
     container_name: flower
     volumes:
       - .:/app
-    command: celery -A lsu_pilot flower --port=5555
+    command: celery -A workers.task_handlers flower --port=5555
     ports:
       - "5555:5555"
     depends_on:
