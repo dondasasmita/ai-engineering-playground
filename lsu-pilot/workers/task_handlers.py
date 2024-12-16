@@ -5,6 +5,8 @@ from dotenv import load_dotenv
 import asyncio
 import logging
 from telegram import Bot
+from .celery_app import app
+
 
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 
@@ -12,11 +14,7 @@ dotenv_path = os.path.join(BASE_DIR, '.env')
 
 load_dotenv(dotenv_path)
 
-broker_url = os.environ.get('CELERY_BROKER_URL')
-backend_url = os.environ.get('CELERY_RESULT_BACKEND')
 telegram_bot_token = os.environ.get('TG_BOT_TOKEN')
-
-app = Celery('lsu_pilot', broker=broker_url, backend=backend_url)
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -50,13 +48,3 @@ def demo_task(chat_id, message):
         error_msg = f"Failed to send message: {str(e)}"
         logger.error(error_msg)
         raise
-
-
-# Optional: Configure Celery
-app.conf.update(
-    task_serializer='json',
-    accept_content=['json'],  # Ignore other content
-    result_serializer='json',
-    timezone='UTC',
-    enable_utc=True,
-) 

@@ -142,19 +142,25 @@ async def internal_knowledge(update: Update, context: ContextTypes.DEFAULT_TYPE)
       await context.bot.send_message(chat_id=update.effective_chat.id, text=answer)
 
 async def demo_celery(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    from lsu_pilot.celery import app
-    
+    from workers.task_handlers import demo_task
+
     chat_id = update.effective_chat.id
     message_text = update.message.text
 
-    # Send the task to Celery with the chat_id
-    app.send_task('demo_task', args=[chat_id, message_text])
-
-    # Inform the user that the task has started
-    await context.bot.send_message(
-        chat_id=chat_id,
-        text="Your task has been started and you will be notified upon completion."
-    )   
+    try:
+        # Send task to worker container
+        demo_task.delay(chat_id, message_text)
+        
+        await context.bot.send_message(
+            chat_id=chat_id,
+            text="Your task has been started and you will be notified upon completion."
+        )
+    except Exception as e:
+        logging.error(f"Failed to send task to worker: {e}")
+        await context.bot.send_message(
+            chat_id=chat_id,
+            text="Sorry, there was an error processing your request."
+        )
 
 async def check_task_status(task, context, chat_id):
     from asyncio import sleep
