@@ -50,13 +50,19 @@ services:
       context: .
       dockerfile: workers/Dockerfile
     container_name: celery_worker
-    volumes:
-      - .:/app
+    ports:
+      - "5679:5678"
     depends_on:
       - rabbitmq
       - redis
     env_file:
       - ./.env
+    command: >
+      sh -c 'if [ \"$DEBUG_WORKER\" = \"1\" ]; then \
+        poetry run python -m debugpy --listen 0.0.0.0:5678 --wait-for-client -m celery -A workers.celery_app worker --loglevel=info; \
+      else \
+        poetry run celery -A workers.celery_app worker --loglevel=info; \
+      fi'
 
   flower:
     build:
