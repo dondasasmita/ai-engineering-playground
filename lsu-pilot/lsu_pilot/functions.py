@@ -4,7 +4,11 @@ import os
 from openai import OpenAI
 from dotenv import load_dotenv
 
-load_dotenv()
+ENV_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+
+dotenv_path = os.path.join(ENV_DIR, '.env')
+
+load_dotenv(dotenv_path)
 
 openai = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
@@ -105,6 +109,7 @@ def get_weather(location, days=1):
         }
         
         # Make the API request
+        # @Donda: check if the program is hitting this API
         response = requests.get(base_url, params=params)
         response.raise_for_status()
         
