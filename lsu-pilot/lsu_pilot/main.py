@@ -19,6 +19,7 @@ import requests
 import pandas as pd
 import numpy as np
 from .questions import answer_question
+from celery import Celery
 
 # Get the directory of the current script
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -142,18 +143,20 @@ async def internal_knowledge(update: Update, context: ContextTypes.DEFAULT_TYPE)
       await context.bot.send_message(chat_id=update.effective_chat.id, text=answer)
 
 async def demo_celery(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    from workers.task_handlers import demo_task
+    broker_url = os.environ.get('CELERY_BROKER_URL')
+    backend_url = os.environ.get('CELERY_RESULT_BACKEND')
+    
+    app = Celery('task_sender', broker=broker_url, backend=backend_url)
 
     chat_id = update.effective_chat.id
     message_text = update.message.text
 
     try:
-        # Send task to worker container
-        demo_task.delay(chat_id, message_text)
+        task_id = app.send_task('workers.task_handlers.demo_task', args=[chat_id, message_text])
         
         await context.bot.send_message(
             chat_id=chat_id,
-            text="Your task has been started and you will be notified upon completion."
+            text=f"Your task #{task_id} has been started and you will be notified upon completion."
         )
     except Exception as e:
         logging.error(f"Failed to send task to worker: {e}")

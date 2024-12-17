@@ -20,7 +20,7 @@ telegram_bot_token = os.environ.get('TG_BOT_TOKEN')
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-@app.task(name='demo_task')
+@app.task(name='workers.task_handlers.demo_task')
 def demo_task(chat_id, message):
     """A simple demo task that simulates work by sleeping for 10 seconds and returns a message
     
