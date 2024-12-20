@@ -19,5 +19,6 @@ RUN poetry config virtualenvs.create false
 
 RUN poetry install --no-dev
 
+COPY scripts/worker_entrypoint.sh ./entrypoint.sh
 
-CMD ["poetry", "run", "celery", "-A", "workers.celery_app", "worker", "--loglevel=info"]
+RUN chmod +x ./entrypoint.sh

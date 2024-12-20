@@ -13,11 +13,18 @@ RUN apt-get update && apt-get install -y \
 
 RUN pip install poetry
 
-COPY ../pyproject.toml ../poetry.lock ./
+COPY pyproject.toml poetry.lock ./
+
+COPY lsu_pilot ./lsu_pilot
+
+COPY embedding ./embedding
+
+COPY processed ./processed
 
 RUN poetry config virtualenvs.create false
 
 RUN poetry install --no-dev
 
-# CMD ["watchmedo", "auto-restart", "--directory=/app", "--pattern=*.py", "--recursive", "--", "poetry", "run", "python", "-m", "lsu_pilot.main"]
-CMD ["poetry", "run", "python", "-m", "lsu_pilot.main"]
+COPY scripts/app_entrypoint.sh ./entrypoint.sh
+
+RUN chmod +x ./entrypoint.sh
