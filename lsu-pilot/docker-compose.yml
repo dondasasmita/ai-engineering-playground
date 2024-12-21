@@ -6,15 +6,16 @@ services:
       context: .
       dockerfile: lsu_pilot/Dockerfile
     container_name: chat_app
-    volumes:
-      - .:/app
     ports:
       - "8080:8080"
+      - "5678:5678"
     depends_on:
       - redis
+    env_file:
+      - ./.env
     environment:
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
+      DEBUG: ${DEBUG:-0}
+    command: ["./entrypoint.sh"]
 
   redis:
     image: redis:latest
@@ -23,7 +24,7 @@ services:
       - "6379:6379"
     volumes:
       - redis_data:/data
-      
+
   rabbitmq:
     image: rabbitmq:3-management
     container_name: rabbitmq
@@ -42,46 +43,35 @@ services:
   celery_worker:
     build:
       context: .
-      dockerfile: lsu_pilot/Dockerfile
+      dockerfile: workers/Dockerfile
     container_name: celery_worker
-    volumes:
-      - .:/app
-    command: celery -A lsu_pilot worker --loglevel=info
+    ports:
+      - "5679:5678"
     depends_on:
       - rabbitmq
       - redis
+    env_file:
+      - ./.env
     environment:
-      REDIS_HOST: ${REDIS_HOST}
-      REDIS_PORT: ${REDIS_PORT}
-      RABBITMQ_HOST: ${RABBITMQ_HOST}
-      RABBITMQ_USER: ${RABBITMQ_USER}
-      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
+      DEBUG_WORKER: ${DEBUG_WORKER:-0}
+    command: ["./entrypoint.sh"]
 
   flower:
     build:
       context: .
-      dockerfile: lsu_pilot/Dockerfile
+      dockerfile: workers/Dockerfile
     container_name: flower
     volumes:
       - .:/app
-    command: celery -A lsu_pilot flower --port=5555
+    command: celery -A workers.task_handlers flower --port=5555
     ports:
       - "5555:5555"
     depends_on:
       - celery_worker
-      - redis
       - rabbitmq
-    environment:
-      REDIS_HOST: ${REDIS_HOST}
-      REDIS_PORT: ${REDIS_PORT}
-      RABBITMQ_HOST: ${RABBITMQ_HOST}
-      RABBITMQ_USER: ${RABBITMQ_USER}
-      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
+      - redis
+    env_file:
+      - ./.env
 
 volumes:
   redis_data:
-
-networks:
-  default:
-    driver: bridge
-  
